@@ -8,7 +8,9 @@ namespace Folderize
     using System;
     using System.Collections.Generic;
     using System.Drawing;
+    using System.Reflection;
     using System.Windows.Forms;
+    using Microsoft.Win32;
 
     /// <summary>
     /// Description of MainForm.
@@ -16,12 +18,34 @@ namespace Folderize
     public partial class MainForm : Form
     {
         /// <summary>
+        /// Gets or sets the associated icon.
+        /// </summary>
+        /// <value>The associated icon.</value>
+        private Icon associatedIcon = null;
+
+        /// <summary>
+        /// The folderize key list.
+        /// </summary>
+        private List<string> folderizeKeyList = new List<string> { @"Software\Classes\*\shell\Folderize", @"Software\Classes\directory\shell\Folderize" };
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="T:Folderize.MainForm"/> class.
         /// </summary>
         public MainForm()
         {
             // The InitializeComponent() call is required for Windows Forms designer support.
             this.InitializeComponent();
+
+            /* Set icons */
+
+            // Set associated icon from exe file
+            this.associatedIcon = Icon.ExtractAssociatedIcon(typeof(MainForm).GetTypeInfo().Assembly.Location);
+
+            // Set public domain weekly tool strip menu item image
+            this.freeReleasesPublicDomainisToolStripMenuItem.Image = this.associatedIcon.ToBitmap();
+
+            // Update GUI
+            this.UpdateByRegistryKey();
         }
 
         /// <summary>
@@ -82,6 +106,40 @@ namespace Folderize
         private void OnAboutToolStripMenuItemClick(object sender, EventArgs e)
         {
             // TODO Add code
+        }
+
+        /// <summary>
+        /// Updates the program by registry key.
+        /// </summary>
+        private void UpdateByRegistryKey()
+        {
+            // Try to set folderize key
+            using (var folderizeKey = Registry.CurrentUser.OpenSubKey(this.folderizeKeyList[1]))
+            {
+                // Check for no returned registry key
+                if (folderizeKey == null)
+                {
+                    // Disable remove button
+                    this.removeButton.Enabled = false;
+
+                    // Enable add button
+                    this.addButton.Enabled = true;
+
+                    // Update status text
+                    this.activityToolStripStatusLabel.Text = "Inactive";
+                }
+                else
+                {
+                    // Disable add button
+                    this.addButton.Enabled = false;
+
+                    // Enable remove button
+                    this.removeButton.Enabled = true;
+
+                    // Update status text
+                    this.activityToolStripStatusLabel.Text = "Active";
+                }
+            }
         }
 
         /// <summary>
