@@ -13,6 +13,7 @@ namespace Folderize
     using System.Reflection;
     using System.Windows.Forms;
     using Microsoft.Win32;
+    using PublicDomain;
 
     /// <summary>
     /// Description of MainForm.
@@ -28,7 +29,7 @@ namespace Folderize
         /// <summary>
         /// The folderize key list.
         /// </summary>
-        private List<string> folderizeKeyList = new List<string> { @"Software\Classes\*\shell\Folderize", @"Software\Classes\directory\shell\Folderize" };
+        private List<string> folderizeKeyList = new List<string> { @"Software\Classes\*\shell\Folderize", @"Software\Classes\directory\shell\Folderize", @"Software\Classes\*\shell\FolderizePlus", @"Software\Classes\directory\shell\FolderizePlus" };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Folderize.MainForm"/> class.
@@ -60,16 +61,42 @@ namespace Folderize
             try
             {
                 // Iterate folderize registry keys 
-                foreach (var folderizeKey in this.folderizeKeyList)
+                foreach (string folderizeKey in this.folderizeKeyList)
                 {
-                    // Add folderize command to registry
-                    RegistryKey registryKey;
-                    registryKey = Registry.CurrentUser.CreateSubKey(folderizeKey);
-                    registryKey.SetValue("icon", Application.ExecutablePath);
-                    registryKey.SetValue("position", "Top");
-                    registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\command");
-                    registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\"");
-                    registryKey.Close();
+                    // Check for e at the end
+                    if (folderizeKey.EndsWith("e", StringComparison.InvariantCulture))
+                    {
+                        // Add folderize command to registry
+                        RegistryKey registryKey;
+                        registryKey = Registry.CurrentUser.CreateSubKey(folderizeKey);
+                        registryKey.SetValue("icon", Application.ExecutablePath);
+                        registryKey.SetValue("position", "-");
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\command");
+                        registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\"");
+                        registryKey.Close();
+                    }
+                    else
+                    {
+                        // Enfolder plus
+                        RegistryKey registryKey;
+                        registryKey = Registry.CurrentUser.CreateSubKey(folderizeKey);
+                        registryKey.SetValue("icon", Application.ExecutablePath);
+                        registryKey.SetValue("position", "-");
+                        registryKey.SetValue("MUIVerb", "Folderize+");
+                        registryKey.SetValue("subcommands", "");
+                        // Browse
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\browse");
+                        registryKey.SetValue(string.Empty, "Browse");
+                        registryKey.SetValue("icon", Application.ExecutablePath);
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\browse\\command");
+                        registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\" /browse");
+                        // DateTime
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\datetime");
+                        registryKey.SetValue(string.Empty, "DateTime");
+                        registryKey.SetValue("icon", Application.ExecutablePath);
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\datetime\\command");
+                        registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\" /datetime");
+                    }
                 }
 
                 // Update the program by registry key
@@ -143,7 +170,8 @@ namespace Folderize
         /// <param name="e">E.</param>
         private void OnSourceCodeGithubcomToolStripMenuItemClick(object sender, EventArgs e)
         {
-            // TODO Add code
+            // Open GitHub
+            Process.Start("https://github.com/publicdomain/folderize");
         }
 
         /// <summary>
@@ -153,7 +181,52 @@ namespace Folderize
         /// <param name="e">E.</param>
         private void OnAboutToolStripMenuItemClick(object sender, EventArgs e)
         {
-            // TODO Add code
+            // Set license text
+            var licenseText = $"CC0 1.0 Universal (CC0 1.0) - Public Domain Dedication{Environment.NewLine}" +
+                $"https://creativecommons.org/publicdomain/zero/1.0/legalcode{Environment.NewLine}{Environment.NewLine}" +
+                $"Libraries and icons have separate licenses.{Environment.NewLine}{Environment.NewLine}" +
+                $"Folder icon by OpenClipart-Vectors - Pixabay License{Environment.NewLine}" +
+                $"https://pixabay.com/vectors/dossier-folder-documents-computer-147590/{Environment.NewLine}{Environment.NewLine}" +
+                $"Patreon icon used according to published brand guidelines{Environment.NewLine}" +
+                $"https://www.patreon.com/brand{Environment.NewLine}{Environment.NewLine}" +
+                $"GitHub mark icon used according to published logos and usage guidelines{Environment.NewLine}" +
+                $"https://github.com/logos{Environment.NewLine}{Environment.NewLine}" +
+                $"DonationCoder icon used with permission{Environment.NewLine}" +
+                $"https://www.donationcoder.com/forum/index.php?topic=48718{Environment.NewLine}{Environment.NewLine}" +
+                $"PublicDomain icon is based on the following source images:{Environment.NewLine}{Environment.NewLine}" +
+                $"Bitcoin by GDJ - Pixabay License{Environment.NewLine}" +
+                $"https://pixabay.com/vectors/bitcoin-digital-currency-4130319/{Environment.NewLine}{Environment.NewLine}" +
+                $"Letter P by ArtsyBee - Pixabay License{Environment.NewLine}" +
+                $"https://pixabay.com/illustrations/p-glamour-gold-lights-2790632/{Environment.NewLine}{Environment.NewLine}" +
+                $"Letter D by ArtsyBee - Pixabay License{Environment.NewLine}" +
+                $"https://pixabay.com/illustrations/d-glamour-gold-lights-2790573/{Environment.NewLine}{Environment.NewLine}";
+
+            // Prepend supporters
+            licenseText = $"RELEASE SUPPORTERS:{Environment.NewLine}{Environment.NewLine}* Jesse Reichler{Environment.NewLine}* Max P.{Environment.NewLine}* Kathryn S.{Environment.NewLine}* Y0himba{Environment.NewLine}{Environment.NewLine}=========={Environment.NewLine}{Environment.NewLine}" + licenseText;
+
+            // Set title
+            string programTitle = typeof(MainForm).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyTitleAttribute>().Title;
+
+            // Set version for generating semantic version
+            Version version = typeof(MainForm).GetTypeInfo().Assembly.GetName().Version;
+
+            // Set about form
+            var aboutForm = new AboutForm(
+                $"About {programTitle}",
+                $"{programTitle} {version.Major}.{version.Minor}.{version.Build}",
+                $"Made for: chumbolito{Environment.NewLine}DonationCoder.com{Environment.NewLine}Day #150, Week #22 @ May 30, 2022",
+                licenseText,
+                this.Icon.ToBitmap())
+            {
+                // Set about form icon
+                Icon = this.associatedIcon,
+
+                // Set always on top
+                TopMost = this.TopMost
+            };
+
+            // Show about form
+            aboutForm.ShowDialog();
         }
 
         /// <summary>
@@ -197,7 +270,8 @@ namespace Folderize
         /// <param name="e">E.</param>
         private void OnExitToolStripMenuItemClick(object sender, EventArgs e)
         {
-            // TODO Add code
+            // Close application
+            this.Close();
         }
     }
 }

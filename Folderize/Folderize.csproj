@@ -9,7 +9,7 @@
     <AssemblyName>Folderize</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <ApplicationIcon>Resources\publicdomain.is_7-8-vista-xp.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\dossier_gd563c93ab_640_So6_icon.ico</ApplicationIcon>
     <NoWin32Manifest>False</NoWin32Manifest>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
