@@ -7,6 +7,7 @@ namespace Folderize
     // Directives
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Drawing;
     using System.IO;
     using System.Reflection;
@@ -120,7 +121,8 @@ namespace Folderize
         /// <param name="e">E.</param>
         private void OnFreeReleasesPublicDomainisToolStripMenuItemClick(object sender, EventArgs e)
         {
-            // TODO Add code
+            // Open our website
+            Process.Start("https://publicdomain.is");
         }
 
         /// <summary>
