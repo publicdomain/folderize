@@ -52,10 +52,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the add button click.
+        /// Handles the add button click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnAddButtonClick(object sender, EventArgs e)
         {
             try
@@ -96,6 +96,12 @@ namespace Folderize
                         registryKey.SetValue("icon", Application.ExecutablePath);
                         registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\datetime\\command");
                         registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\" /datetime");
+                        // InputBox
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\inputbox");
+                        registryKey.SetValue(string.Empty, "InputBox");
+                        registryKey.SetValue("icon", Application.ExecutablePath);
+                        registryKey = Registry.CurrentUser.CreateSubKey($"{folderizeKey}\\Shell\\inputbox\\command");
+                        registryKey.SetValue(string.Empty, $"{Path.Combine(Application.StartupPath, Application.ExecutablePath)} \"%1\" /inputbox");
                     }
                 }
 
@@ -142,10 +148,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the free releases public domainis tool strip menu item click.
+        /// Handles the free releases public domainis tool strip menu item click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnFreeReleasesPublicDomainisToolStripMenuItemClick(object sender, EventArgs e)
         {
             // Open our website
@@ -153,10 +159,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the original thread donation codercom tool strip menu item click.
+        /// Handles the original thread donation codercom tool strip menu item click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnOriginalThreadDonationCodercomToolStripMenuItemClick(object sender, EventArgs e)
         {
             // Open original thread
@@ -164,10 +170,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the source code githubcom tool strip menu item click.
+        /// Handles the source code githubcom tool strip menu item click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnSourceCodeGithubcomToolStripMenuItemClick(object sender, EventArgs e)
         {
             // Open GitHub
@@ -175,10 +181,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the about tool strip menu item click.
+        /// Handles the about tool strip menu item click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnAboutToolStripMenuItemClick(object sender, EventArgs e)
         {
             // Set license text
@@ -264,10 +270,10 @@ namespace Folderize
         }
 
         /// <summary>
-        /// Ons the exit tool strip menu item click.
+        /// Handles the exit tool strip menu item click.
         /// </summary>
-        /// <param name="sender">Sender.</param>
-        /// <param name="e">E.</param>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void OnExitToolStripMenuItemClick(object sender, EventArgs e)
         {
             // Close application
