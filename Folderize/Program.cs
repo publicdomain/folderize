@@ -7,9 +7,15 @@ namespace Folderize
 {
     // Directives
     using System;
+    using System.Diagnostics;
     using System.IO;
+    using System.Linq;
+    using System.Security.Cryptography;
+    using System.Text;
     using System.Threading;
     using System.Windows.Forms;
+    using Microsoft.VisualBasic;
+    using Microsoft.Win32;
 
     /// <summary>
     /// Class with program entry point.
@@ -17,9 +23,14 @@ namespace Folderize
     internal sealed class Program
     {
         /// <summary>
-        /// The first instance mutex.
+        /// The folderize mutex.
         /// </summary>
-        public static Mutex FirstInstanceMutex = null;
+        public static Mutex folderizeMutex = null;
+
+        /// <summary>
+        /// The file mutex.
+        /// </summary>
+        public static Mutex FileMutex = null;
 
         /// <summary>
         /// Program entry point.
@@ -32,18 +43,22 @@ namespace Folderize
             {
                 try
                 {
+                    // Set target
+                    string target = args[0];
+
+                    // Set fileinfo
+                    FileInfo targetFileInfo = new FileInfo(target);
+
                     // Check if "Folderize"
                     if (args.Length == 1)
                     {
-                        // Set target
-                        string target = args[0];
-
-                        // Set fileinfo
-                        FileInfo targetFileInfo = new FileInfo(target);
-
                         // Skip directories
                         if (!targetFileInfo.Attributes.HasFlag(FileAttributes.Directory))
                         {
+                            // Set file mutex and wait
+                            FileMutex = new Mutex(false, @"Local\EnfolderFile");
+                            FileMutex.WaitOne();
+
                             // Set target directory
                             string targetDirectory = Path.Combine(targetFileInfo.DirectoryName, Path.GetFileNameWithoutExtension(target));
 
@@ -52,27 +67,153 @@ namespace Folderize
 
                             // Move target into it
                             File.Move(target, Path.Combine(targetDirectory, targetFileInfo.Name));
+
+                            // Release the mutex
+                            FileMutex.ReleaseMutex();
+                        }
+                        else
+                        {
+                            // Directory, exit
+                            return;
                         }
                     }
                     else
                     {
-                        /*// The first instance flag
+                        // The first instance flag
                         bool firstInstance;
 
-                        // Set first instance mutex
-                        FirstInstanceMutex = new Mutex(true, @"Local\Folderize", out firstInstance);
+                        // Set directory hash
+                        string directoryHash = GetHash(targetFileInfo.DirectoryName);
 
-                        for (int i = 0; i < args.Length; i++)
-                        {
-                            MessageBox.Show($"{args.Length} {i}: {args[i]}");
-                        }
+                        // Set registry subkey path
+                        string subkeyPath = $"Software\\PublicDomain.is\\Folderize\\{directoryHash}";
+
+                        // Set first instance mutex
+                        folderizeMutex = new Mutex(true, $"Local\\Folderize_{directoryHash}", out firstInstance);
+
+                        // Add to queue
+                        RegistryKey registryKey;
+                        registryKey = Registry.CurrentUser.CreateSubKey(subkeyPath);
+
+                        // Set file hash
+                        registryKey.SetValue(GetHash(targetFileInfo.Name), target);
 
                         // Act according to first instance
                         if (firstInstance)
                         {
-                            // Release the mutex
-                            FirstInstanceMutex.ReleaseMutex();
-                        }*/
+                            // Declare target directory
+                            string targetDirectory = string.Empty;
+
+                            // Set target directory
+                            while (targetDirectory == string.Empty)
+                            {
+                                // Switch type argument
+                                switch (args[1])
+                                {
+                                    // Browse
+                                    case "/browse":
+                                    default:
+
+                                        using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+                                        {
+                                            folderBrowserDialog.ShowNewFolderButton = true;
+
+                                            if (folderBrowserDialog.ShowDialog() == DialogResult.OK && folderBrowserDialog.SelectedPath.Length > 0 && Directory.Exists(folderBrowserDialog.SelectedPath))
+                                            {
+                                                targetDirectory = folderBrowserDialog.SelectedPath;
+                                            }
+                                        }
+
+                                        break;
+
+                                    // DateTime
+                                    case "/datetime":
+
+                                        targetDirectory = Path.Combine(targetFileInfo.DirectoryName, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}");
+
+                                        break;
+
+                                    // InputBox
+                                    case "/inputbox":
+
+                                        // User input
+                                        string userInput = Interaction.InputBox("Set target directory name:", "Folderize");
+
+                                        if (userInput.Length > 0)
+                                        {
+                                            string userDirectoryInput = $"{string.Join("_", userInput.Split(Path.GetInvalidFileNameChars()))}";
+
+                                            targetDirectory = Path.Combine(targetFileInfo.DirectoryName, userDirectoryInput);
+                                        }
+
+                                        break;
+                                }
+                            }
+
+                            // Create directory
+                            Directory.CreateDirectory(targetDirectory);
+
+                            /* Loop until registry is empty AND one minute has passed */
+
+                            // Stopwatch
+                            Stopwatch firstInstanceStopwatch = new Stopwatch();
+
+                            while (true)
+                            {
+                                // Read all files in the registry queue
+                                string[] valueNames = registryKey.GetValueNames();
+
+                                if (valueNames.Length > 0)
+                                {
+                                    foreach (string valueName in valueNames)
+                                    {
+                                        object value = registryKey.GetValue(valueName);
+
+                                        if (value != null)
+                                        {
+                                            // Sey file value
+                                            string fileValue = value.ToString();
+
+                                            try
+                                            {
+                                                // Move target
+                                                File.Move(fileValue, Path.Combine(targetDirectory, new FileInfo(fileValue).Name));
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                // TODO Log to error file [Make it via function / i.e. DRY ]
+                                                File.AppendAllText("Folderize-ErrorLog.txt", $"{Environment.NewLine}{Environment.NewLine}DateTime: {DateTime.UtcNow}, Args: {string.Join(",", args)}{Environment.NewLine}{ex.Message}");
+                                            }
+
+                                            // Remove the value
+                                            registryKey.DeleteValue(valueName);
+                                        }
+                                    }
+
+                                    // Restart the stopwatch
+                                    firstInstanceStopwatch.Restart();
+                                }
+                                else
+                                {
+                                    // Close after a minute since last processed file has passed
+                                    if (firstInstanceStopwatch.ElapsedMilliseconds >= 60000) // 1000ms * 60; one minute.
+                                    {
+                                        // Remove the key
+                                        registryKey.Close();
+                                        Registry.CurrentUser.DeleteSubKey(subkeyPath);
+
+                                        // Release the mutex
+                                        folderizeMutex.ReleaseMutex();
+
+                                        // Halt flow
+                                        break;
+                                    }
+                                }
+
+                                // 1000 / 50 = 20 times
+                                Thread.Sleep(50);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -87,6 +228,17 @@ namespace Folderize
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new MainForm());
             }
+        }
+
+        /// <summary>
+        /// Gets the hash.
+        /// </summary>
+        /// <returns>The hash.</returns>
+        /// <param name="input">Input.</param>
+        private static string GetHash(string input)
+        {
+            // Return MD5
+            return string.Join(string.Empty, MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input)).Select(b => b.ToString("x2")));
         }
     }
 }
