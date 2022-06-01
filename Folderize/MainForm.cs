@@ -220,7 +220,7 @@ namespace Folderize
             var aboutForm = new AboutForm(
                 $"About {programTitle}",
                 $"{programTitle} {version.Major}.{version.Minor}.{version.Build}",
-                $"Made for: chumbolito{Environment.NewLine}DonationCoder.com{Environment.NewLine}Day #150, Week #22 @ May 30, 2022",
+                $"Made for: chumbolito{Environment.NewLine}DonationCoder.com{Environment.NewLine}Day #152, Week #22 @ June 01, 2022",
                 licenseText,
                 this.Icon.ToBitmap())
             {
